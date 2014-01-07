@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Timers;
 using Org.Json;
 
 using Java.Net;
@@ -26,6 +27,8 @@ namespace Service
     [Service(Label = "GpsService")]
     public class GpsService : Android.App.Service, Android.Locations.ILocationListener 
     {
+        System.Threading.Timer _GpsQualityTimer;
+        Handler _handler;
 
         AzureDB azureDB;
         Location _currentLocation;
@@ -33,11 +36,11 @@ namespace Service
         LocationManager _locationManager;
         Availability _gpsStatus;
         string _locationProvider;
-        
-        System.Threading.Timer _timer;
-
+        private System.Timers.Timer _gpsUpdateTimer;
+        System.Threading.Timer _locationRequestTimer;
         string _locationText;
         long _updateInterval = 30*1000;
+        bool _ifGpsDataRecieved;
         
         public override void OnCreate()
         {
@@ -51,16 +54,13 @@ namespace Service
 
             Toast.MakeText(this, "new AzureDB();", ToastLength.Long).Show();
 
-            Handler handler = new Handler();
+            _handler = new Handler();
 
-            handler.Post(delegate() { StartLocationRequestTimer(); });
+            _handler.Post(delegate() { StartLocationRequestTimerStart(); });
 
         }
         public override void OnDestroy()
         {
-
-            
-
             Log.Debug("SimpleService", "SimpleService stopped");
         }
 
@@ -91,26 +91,28 @@ namespace Service
         }
 
         
-
-
-
-
-        
+               
 
         public void OnLocationChanged(Location location) 
         {
             Log.Debug("SimpleService", "OnLocationChanged");
             if (location != null)
             {
+                
+
+                //end of gps quality timer started on locationRequest 
+                if (_GpsQualityTimer != null)
+                {
+                    qualityTimerStop();
+                }
+                
                 _currentLocation = location;
                 _locationText = string.Format("{0}, {1}", location.Latitude, location.Longitude);
 
                 Log.Debug("SimpleService", _locationText);
 
                 WriteLocationTextFile(_locationText, location);
-
-               
-                
+ 
             }
         }
         
@@ -151,23 +153,21 @@ namespace Service
 
 
 
-        public void StartLocationRequestTimer()
+        public void StartLocationRequestTimerStart()
         {
 
             
 
-            _timer = new System.Threading.Timer((o) =>
+            _locationRequestTimer = new System.Threading.Timer((o) =>
             {
                 try
                 {
                     //periodic update of location provider information
 
-                        
                     locationRequest();
-                    
-                    
+
                     Log.Debug("SimpleService", "LocationTimerTick");
-                    Toast.MakeText(this, _locationProvider, ToastLength.Long).Show();
+                    //Toast.MakeText(this, _locationProvider, ToastLength.Long).Show();
                 }
                 catch (System.Exception e)
                 {
@@ -219,6 +219,7 @@ namespace Service
         {
             try
             {
+                Log.Debug("SimpleService", "locationRequest()");
                 //if (_locationProvider == "gps")
                 //{
                 //    if (_gpsStatus == Availability.OutOfService || _gpsStatus == Availability.TemporarilyUnavailable)
@@ -230,11 +231,40 @@ namespace Service
                 //}
                 //else
                 //{
-                    _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
                 //}
 
+
+                _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
+                
+
                 _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this);
-                Log.Debug("SimpleService", "locationRequest()");
+
+                //selecting Network provider if gps is not responding for a long time 
+                if (_locationProvider == "gps")
+                {
+                    _ifGpsDataRecieved = false;
+                    if (_GpsQualityTimer != null)
+                    {
+                        _GpsQualityTimer.Dispose();
+                    }
+
+                    qualityTimerStart();
+
+                    if (_ifGpsDataRecieved == false)
+                    {
+                        //setting Network provider 
+                        _criteriaForLocationService.Accuracy = Accuracy.Coarse;
+                        _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
+                        _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this);
+                    }
+
+
+                    Log.Debug("SimpleService", "ifGpsDataRecieved " + _ifGpsDataRecieved.ToString());
+                }
+
+                Toast.MakeText(this, _locationProvider.ToString(), ToastLength.Long).Show();
+                Log.Debug("SimpleService", "Provider "+_locationProvider.ToString());
+                
             }
             catch(System.Exception e)
             {
@@ -245,139 +275,48 @@ namespace Service
 
 
 
+        private void qualityTimerStart()
+        {
+            int interval = 40000;
+            Log.Debug("SimpleService", "qualityTimerStart()");
 
+            // Create a timer with a ten second interval.
+            _gpsUpdateTimer = new System.Timers.Timer(interval+500);
 
+            // Hook up the Elapsed event for the timer.
+            _gpsUpdateTimer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
 
+            // Set the Interval to 20 seconds (20000 milliseconds).
+            _gpsUpdateTimer.Interval = interval;
+            _gpsUpdateTimer.Enabled = true;
+     
+        }
 
-
-        //private void loadPointsFromServer(Location location)
-        //{
-        //    try
-        //    {
-        //        string fetchUrl = Constants.kFindPOIUrl + "?latitude="
-        //        + location.Latitude + "&longitude="
-        //        + location.Longitude + "&radiusInMeters=1000";
-        //        URL url = new URL(fetchUrl);
-
-        //        HttpURLConnection urlConnection = (HttpURLConnection)url.OpenConnection();
-        //        try
-        //        {
-        //            BufferedReader r = new BufferedReader(new InputStreamReader(urlConnection.InputStream));
-
-        //            Java.Lang.StringBuilder stringBuilderResult = new Java.Lang.StringBuilder();
-        //            string line;
-        //            while ((line = r.ReadLine()) != null)
-        //            {
-        //                stringBuilderResult.Append(line);
-        //            }
-
-        //            JSONArray jsonArray = new JSONArray(
-        //                    stringBuilderResult.ToString());
-        //            for (int i = 0; i < jsonArray.Length(); i++)
-        //            {
-        //                JSONObject jsonObject = jsonArray.GetJSONObject(i);
-        //                double latitude = jsonObject.GetDouble("Latitude");
-        //                double longitude = jsonObject.GetDouble("Longitude");
-        //                string description = jsonObject.GetString("Description");
-        //                string itemUrl = jsonObject.GetString("Url");
-        //                // The item URL comes back with quotes at the beginning,
-        //                // so we strip them out
-        //                itemUrl = itemUrl.Replace("\"", "");
-
-        //                // Create a new geo point with this information and add it
-        //                // to the overlay
-        //                GeoPoint point = coordinatesToGeoPoint(new double[] { latitude, longitude });
-        //                OverlayItem overlayitem = new OverlayItem(point, description, itemUrl);
-        //                MarkerOptions markerOptions = new MarkerOptions();
-        //                markerOptions.SetPosition(new LatLng(latitude, longitude));
-        //                //_map.AddMarker(markerOptions);
-
-
-        //            }
-        //        }
-        //        catch (System.Exception ex)
-        //        {
-        //            Log.Debug("MainActivity", "Error getting data from server: " + ex.Message);
-        //        }
-        //        finally
-        //        {
-        //            urlConnection.Disconnect();
-        //        }
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        Log.Debug("MainActivity", "Error creating connection: " + ex.Message);
-        //    }
-        //}
         
-        //private string postPointOfInterestToServer(Location mCurrentLocation)
-        //{
-        //    try
-        //    {
-        //        // Make sure we have a location
-        //        if (mCurrentLocation == null)
-        //        {
-        //            return "FAIL-LOCATION";
-        //        }
 
-        //        // We've posted succesfully, let's build the JSON data
-        //        JSONObject jsonUrl = new JSONObject();
-        //        try
-        //        {
-        //            jsonUrl.Put("Id", 1.ToString());
-        //            jsonUrl.Put("Latitude", mCurrentLocation.Latitude);
-        //            jsonUrl.Put("Longitude", mCurrentLocation.Longitude);
-        //            jsonUrl.Put("Type", 1);
-        //        }
-        //        catch (JSONException e)
-        //        {
-        //            Log.Debug("AddPOI", "Exception building JSON: " + e.Message);
-        //            e.PrintStackTrace();
-        //        }
+        private void qualityTimerStop()
+        {
+            Log.Debug("SimpleService", "qualityTimerStop()");
+            _gpsUpdateTimer.Dispose();
 
-        //        HttpURLConnection newPOIUrlConnection = null;
-        //        URL newPOIUrl = new URL(Constants.kAddPOIUrl);
-        //        newPOIUrlConnection = (HttpURLConnection)newPOIUrl.OpenConnection();
-        //        newPOIUrlConnection.DoOutput = true;
-        //        newPOIUrlConnection.AddRequestProperty("Content-Type", "application/json");
-        //        newPOIUrlConnection.SetRequestProperty("Content-Length", "" + Integer.ToString(Encoding.Unicode.GetBytes(jsonUrl.ToString()).Length));
-        //        // Write json data to server
-        //        DataOutputStream newPoiWR = new DataOutputStream(newPOIUrlConnection.OutputStream);
-        //        newPoiWR.WriteBytes(jsonUrl.ToString());
-        //        newPoiWR.Flush();
-        //        newPoiWR.Close();
-
-        //        return newPOIUrlConnection.ResponseMessage;
-
-        //        // End of post of byte array to server
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        Log.Debug("AddPOI", "Error in image upload: " + ex.Message);
-        //    }
-        //    return "BIGFAIL";
-        //}
-
-        //public static GeoPoint coordinatesToGeoPoint(double[] coords)
-        //{
-        //    if (coords.Length > 2)
-        //    {
-        //        return null;
-        //    }
-        //    if (coords[0] == double.NaN || coords[1] == double.NaN)
-        //    {
-        //        return null;
-        //    }
-        //    int latitude = (int)(coords[0] * 1E6);
-        //    int longitude = (int)(coords[1] * 1E6);
-        //    return new GeoPoint(latitude, longitude);
-        //}
- 
+        }
 
 
+        // Specify what you want to happen when the Elapsed event is raised. 
+        private void OnTimedEvent(object source, ElapsedEventArgs e)
+        {
+            qualityTimerStop();
+            Log.Debug("SimpleService", "OnTimedEvent()");
+            //_ifGpsDataRecieved = true;
 
-
-
+            _handler.Post(delegate()
+            {
+                _criteriaForLocationService.Accuracy = Accuracy.Coarse;
+                _criteriaForLocationService.PowerRequirement = Power.Low;
+                _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
+                _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this);
+            });
+        }
 
         public class Constants
         {
@@ -386,7 +325,7 @@ namespace Service
         }
 
 
-
+                            
 
 
     }

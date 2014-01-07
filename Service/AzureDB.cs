@@ -20,6 +20,7 @@ namespace Service
     {
         
         private Context _context;
+        public int _numberOfRequiredPoints=5;
         private MobileServiceClient _client; // Mobile Service Client references
         private IMobileServiceTable<LocationsData> _LocationTable; // Mobile Service Table used to access data
 
@@ -86,8 +87,8 @@ namespace Service
             {
                 //Get last 3 locations
 
-                _locationFromServer = await _LocationTable.Take(10).ToListAsync();
-                Log.Debug("AzureDB", "Where");
+                _locationFromServer = await _LocationTable.Take(_numberOfRequiredPoints).ToListAsync();
+                Log.Debug("AzureDB", _numberOfRequiredPoints.ToString());
 
             }
             catch (Exception e)

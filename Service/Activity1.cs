@@ -33,7 +33,6 @@ namespace Service
 
                context.StartService(i);
 
-                //StartService(new Intent(this, typeof(GpsService.GpsService)));
                 Toast.MakeText
                 (
                     context,
@@ -49,30 +48,44 @@ namespace Service
     public class MapsActivity : Activity
     {
 
-        Button _button;
+        Button _StartServiceButton;
+        Button _GetLocationsButton;
         MapFragment _mapFragment;
         GoogleMap _map;
         Handler _handler;
-        AzureDB azureRecieveInstance;
-
+        AzureDB _azureRecieveInstance;
         System.Threading.Timer _timer;
         long _updateInterval = 30 * 1000;
-                
+        SeekBar _seekBar;
+
+
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
 
             SetContentView(Resource.Layout.Main);
-
             InitMapFragment();
 
-            azureRecieveInstance = new AzureDB(this);
-            
-            
-            _button = FindViewById<Button>(Resource.Id.aButton);
-            _button.Text = "Start Service";
+            _StartServiceButton = FindViewById<Button>(Resource.Id.aButton);
+            _StartServiceButton.Text = "Start Service";
 
-            _button.Click += (sender, e) =>
+            _GetLocationsButton = FindViewById<Button>(Resource.Id.bButton);
+            _GetLocationsButton.Text = "Get Locations";
+
+            _seekBar = FindViewById<SeekBar>(Resource.Id.seekBar1);
+            _seekBar.Max = 20;
+            _seekBar.Progress = 5;
+
+            _seekBar.ProgressChanged += (object sender, SeekBar.ProgressChangedEventArgs e) =>
+            {
+                if (e.FromUser)
+                {
+                    _azureRecieveInstance._numberOfRequiredPoints = e.Progress;
+                    _StartServiceButton.Text = string.Format("Start Service, {0} points", e.Progress);
+                }
+            };
+
+            _StartServiceButton.Click += (sender, e) =>
             {
                 StartService(new Intent(this, typeof(GpsService)));
 
@@ -85,15 +98,52 @@ namespace Service
                 //this.Finish();
             };
 
+            _GetLocationsButton.Click += (sender, e) =>
+            {
 
-            
-            Handler handler = new Handler();
-            handler.Post(delegate() { StartServerRequestTimer(); });
-            
+                if (_azureRecieveInstance != null)
+                {
+                    GetDataFromServer();
+                }
+
+               //this.Finish();
+            };
+
+            _handler = new Handler();
         }
 
-         
 
+        protected override void OnPause()
+        {
+            base.OnPause();
+
+            if (_timer!=null)
+                _timer.Dispose();
+
+            Log.Debug("OnPause", "OnPause()");
+
+        }
+
+        protected override void OnResume()
+        {
+            base.OnResume();
+            if (_timer == null)
+                _handler.Post(delegate() { StartServerRequestTimer(); });
+
+            Log.Debug("OnResume", "OnResume()");
+        }
+
+
+        protected override void OnStart()
+        {
+            base.OnStart();
+            _azureRecieveInstance = new AzureDB(this);
+
+
+            //_handler.Post(delegate() { StartServerRequestTimer(); });
+
+            Log.Debug("OnStart", "OnStart()");
+        }
 
 
         private void InitMapFragment()
@@ -115,7 +165,7 @@ namespace Service
             
             _map = _mapFragment.Map;
 
-            _handler = new Handler();
+            
 
         }
         
@@ -130,18 +180,18 @@ namespace Service
                     //periodic update of location provider information
 
 
-                    if (azureRecieveInstance != null)
+                    if (_azureRecieveInstance != null)
                     {
                         Log.Debug("StartServerRequestTimer", "GetLocationAsync");
-                        OnRefreshItemsSelected(); 
+                        GetDataFromServer(); 
                     }
 
-                    if (azureRecieveInstance._locationFromServer != null)
+                    if (_azureRecieveInstance._locationFromServer != null)
                     {
                         Log.Debug("StartServerRequestTimer", "LocationFromServer");
                         _handler.Post(delegate()
                         {
-                        DrawPointsOnMap(azureRecieveInstance._locationFromServer);
+                            DrawPointsOnMap(_azureRecieveInstance._locationFromServer);
                         });
                         
                     }
@@ -203,9 +253,9 @@ namespace Service
 
        
 
-        private async void OnRefreshItemsSelected()
+        public async void GetDataFromServer()
         {
-            await azureRecieveInstance.GetLocationDataFromServerAsync();
+            await _azureRecieveInstance.GetLocationDataFromServerAsync();
         } 
 
     }
