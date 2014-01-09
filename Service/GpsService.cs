@@ -39,7 +39,8 @@ namespace Service
         private System.Timers.Timer _gpsUpdateTimer;
         System.Threading.Timer _locationRequestTimer;
         string _locationText;
-        long _updateInterval = 30*1000;
+        //long _updateInterval = 30 * 1000;
+        long _updateInterval = 30 * 60 * 1000;
         bool _ifGpsDataRecieved;
         
         public override void OnCreate()
@@ -48,11 +49,11 @@ namespace Service
 
             InitializeLocationManager();
 
-            Toast.MakeText(this, "InitializeLocationManager()", ToastLength.Long).Show();
-
+            ToastShow.ToastShowMethod(this, "InitializeLocationManager()");
+            
             azureDB = new AzureDB(this);
 
-            Toast.MakeText(this, "new AzureDB();", ToastLength.Long).Show();
+            ToastShow.ToastShowMethod(this, "new AzureDB();");
 
             _handler = new Handler();
 
@@ -167,7 +168,7 @@ namespace Service
                     locationRequest();
 
                     Log.Debug("SimpleService", "LocationTimerTick");
-                    //Toast.MakeText(this, _locationProvider, ToastLength.Long).Show();
+                    //ToastShow.ToastShowMethod(this, _locationProvider);
                 }
                 catch (System.Exception e)
                 {
@@ -201,14 +202,14 @@ namespace Service
                 }
 
                 //FTPClient.FTPClient.SendFile(this, filename);
-                Toast.MakeText(this, _locationProvider, ToastLength.Long).Show();
+                ToastShow.ToastShowMethod(this, _locationProvider);
                 if (azureDB != null)
                 { azureDB.Addlocation(location); }
 
             }
             catch (System.Exception e)
             {
-                Toast.MakeText(this, "Exception" + e.Message, ToastLength.Long).Show();
+                //ToastShow.ToastShowMethod(this, "Exception" + e.Message);
                 Log.Debug("Exception", e.Message);
             }
 
@@ -220,18 +221,6 @@ namespace Service
             try
             {
                 Log.Debug("SimpleService", "locationRequest()");
-                //if (_locationProvider == "gps")
-                //{
-                //    if (_gpsStatus == Availability.OutOfService || _gpsStatus == Availability.TemporarilyUnavailable)
-                //    {
-                //        _criteriaForLocationService.Accuracy = Accuracy.Coarse;
-                //        _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
-                //        Log.Debug("SimpleService", "network provider was set");
-                //    }
-                //}
-                //else
-                //{
-                //}
 
 
                 _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
@@ -262,13 +251,12 @@ namespace Service
                     Log.Debug("SimpleService", "ifGpsDataRecieved " + _ifGpsDataRecieved.ToString());
                 }
 
-                Toast.MakeText(this, _locationProvider.ToString(), ToastLength.Long).Show();
                 Log.Debug("SimpleService", "Provider "+_locationProvider.ToString());
                 
             }
             catch(System.Exception e)
             {
-                Toast.MakeText(this, "Exception" + e.Message, ToastLength.Long).Show();
+                //ToastShow.ToastShowMethod(this, "Exception" + e.Message);
                 Log.Debug("Exception", e.Message);
             }
         }

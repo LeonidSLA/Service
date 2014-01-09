@@ -11,10 +11,11 @@ using Android.Views;
 using Android.Widget;
 using Android.Locations;
 using Newtonsoft.Json;
-
+using Microsoft.WindowsAzure.MobileServices;
 
 namespace Service
 {
+    
     class LocationsData
     {
         [JsonProperty(PropertyName = "id")]
@@ -29,5 +30,16 @@ namespace Service
         [JsonProperty(PropertyName = "latitude")]
         public double latitude { get; set; }
         
+    }
+
+    public static class ToastShow
+    {
+        public static void ToastShowMethod(Context context, string text)
+        {
+            bool isToastShow=false;
+
+            if (isToastShow)
+            { Toast.MakeText(context, text, ToastLength.Long); }
+        }
     }
 }

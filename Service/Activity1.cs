@@ -33,12 +33,7 @@ namespace Service
 
                context.StartService(i);
 
-                Toast.MakeText
-                (
-                    context,
-                    "GPS Service started",
-                    ToastLength.Long
-                ).Show();
+               ToastShow.ToastShowMethod(context, "GPS Service started");
 
             }
         }
@@ -70,7 +65,7 @@ namespace Service
             _StartServiceButton.Text = "Start Service";
 
             _GetLocationsButton = FindViewById<Button>(Resource.Id.bButton);
-            _GetLocationsButton.Text = "Get Locations";
+            _GetLocationsButton.Text = "Get Locations, 5 points";
 
             _seekBar = FindViewById<SeekBar>(Resource.Id.seekBar1);
             _seekBar.Max = 20;
@@ -81,7 +76,17 @@ namespace Service
                 if (e.FromUser)
                 {
                     _azureRecieveInstance._numberOfRequiredPoints = e.Progress;
-                    _StartServiceButton.Text = string.Format("Start Service, {0} points", e.Progress);
+                    _GetLocationsButton.Text = string.Format("Start Service, {0} points", e.Progress);
+                }
+            };
+
+            _GetLocationsButton.Click += async(sender, e) =>
+             {
+
+                if (_azureRecieveInstance != null)
+                {
+                    await GetDataFromServer();
+                    DrawPointsOnMap(_azureRecieveInstance._locationFromServer);
                 }
             };
 
@@ -89,25 +94,12 @@ namespace Service
             {
                 StartService(new Intent(this, typeof(GpsService)));
 
-                Toast.MakeText
-                    (this,
-                    "Service started",
-                    ToastLength.Long
-                    ).Show();
+                ToastShow.ToastShowMethod(this,"Service started");
 
                 //this.Finish();
             };
 
-            _GetLocationsButton.Click += (sender, e) =>
-            {
 
-                if (_azureRecieveInstance != null)
-                {
-                    GetDataFromServer();
-                }
-
-               //this.Finish();
-            };
 
             _handler = new Handler();
         }
@@ -127,8 +119,8 @@ namespace Service
         protected override void OnResume()
         {
             base.OnResume();
-            if (_timer == null)
-                _handler.Post(delegate() { StartServerRequestTimer(); });
+            //if (_timer == null)
+            //    _handler.Post(delegate() { StartServerRequestTimer(); });
 
             Log.Debug("OnResume", "OnResume()");
         }
@@ -138,6 +130,7 @@ namespace Service
         {
             base.OnStart();
             _azureRecieveInstance = new AzureDB(this);
+
 
 
             //_handler.Post(delegate() { StartServerRequestTimer(); });
@@ -173,7 +166,7 @@ namespace Service
         {
 
 
-            _timer = new System.Threading.Timer((o) =>
+            _timer = new System.Threading.Timer(async(o) =>
             {
                 try
                 {
@@ -183,7 +176,7 @@ namespace Service
                     if (_azureRecieveInstance != null)
                     {
                         Log.Debug("StartServerRequestTimer", "GetLocationAsync");
-                        GetDataFromServer(); 
+                        await GetDataFromServer(); 
                     }
 
                     if (_azureRecieveInstance._locationFromServer != null)
@@ -198,11 +191,11 @@ namespace Service
 
 
                     Log.Debug("StartServerRequestTimer", "RequestTimerTick");
-                    //Toast.MakeText(this, _locationProvider, ToastLength.Long).Show();
+                    //ToastShow.ToastShowMethod(this, _locationProvider, ToastLength.Long).Show();
                 }
                 catch (System.Exception e)
                 {
-                    //Toast.MakeText(this, "Exception" + e.Message, ToastLength.Long).Show();
+                    //ToastShow.ToastShowMethod(this, "Exception" + e.Message, ToastLength.Long).Show();
                     Log.Debug("StartServerRequestTimer", e.Message);
                 }
 
@@ -253,7 +246,7 @@ namespace Service
 
        
 
-        public async void GetDataFromServer()
+        public async System.Threading.Tasks.Task GetDataFromServer()
         {
             await _azureRecieveInstance.GetLocationDataFromServerAsync();
         } 

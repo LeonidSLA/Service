@@ -38,15 +38,15 @@ namespace Service
                 _client = new MobileServiceClient(ApplicationURL, ApplicationKey);
                 Log.Debug("AzureDB", "new MobileServiceClient");
 
-                Toast.MakeText(_context, "MobileServiceClient", ToastLength.Long).Show();
+                ToastShow.ToastShowMethod(_context, "MobileServiceClient");
 
                 _LocationTable = _client.GetTable<LocationsData>();
                 Log.Debug("AzureDB", "_client.GetTable");
-                Toast.MakeText(_context, "GetTable", ToastLength.Long).Show();
+                ToastShow.ToastShowMethod(_context, "GetTable");
             }
             catch (Exception e)
             {
-                Toast.MakeText(_context, e.ToString(), ToastLength.Long).Show();
+                ToastShow.ToastShowMethod(_context, e.ToString());
                 Log.Debug("AzureDB", e.ToString());
             }
 
@@ -60,14 +60,14 @@ namespace Service
             try
             {
 
-                Toast.MakeText(_context, "Addlocation ", ToastLength.Long).Show();
+                ToastShow.ToastShowMethod(_context, "Addlocation ");
                 
                 if (_LocationTable != null)
                 {
                     CurrentPlatform.Init();
 
                     await _LocationTable.InsertAsync(locationData);
-                    //Toast.MakeText(_context, "InsertAsync", ToastLength.Long).Show();
+                    //ToastShow.ToastShowMethod(_context, "InsertAsync");
                     
                 }
 
@@ -75,7 +75,7 @@ namespace Service
             catch (Exception e)
             {
                 Log.Debug("Addlocation", e.ToString());
-                Toast.MakeText(_context, e.ToString(), ToastLength.Long).Show();
+                ToastShow.ToastShowMethod(_context, e.ToString());
             }
 
         }
@@ -86,15 +86,18 @@ namespace Service
             try
             {
                 //Get last 3 locations
+                
+                //_locationFromServer = await _LocationTable.Take(_numberOfRequiredPoints).ToListAsync();
+                _locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Take(_numberOfRequiredPoints).ToListAsync();
+                               
 
-                _locationFromServer = await _LocationTable.Take(_numberOfRequiredPoints).ToListAsync();
                 Log.Debug("AzureDB", _numberOfRequiredPoints.ToString());
 
             }
             catch (Exception e)
             {
                 Log.Debug("GetLocationDataFromServerAsync", e.Message);
-                Toast.MakeText(_context, e.ToString(), ToastLength.Long).Show();
+                ToastShow.ToastShowMethod(_context, e.ToString());
             }
         }
         

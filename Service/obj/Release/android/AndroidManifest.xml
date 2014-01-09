@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto" package="ru.GpsService" android:versionCode="1" android:versionName="0.5 alfa">
   <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="16" />
-  <application android:label="GpsService" android:debuggable="true" android:icon="@drawable/gps_30" android:name="mono.android.app.Application">
+  <application android:label="GpsService" android:debuggable="true" android:name="mono.android.app.Application">
     <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyAGSgD_R0TwaDz5RbEjYjYJHsCTBCkcDvg" />
     <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
     <receiver android:label="GpsService" android:name="service.BootCompletedBroadcastMessageReceiver">

@@ -238,14 +238,14 @@ namespace Service
 			// aapt resource value: 0x7f050005
 			public const int aButton = 2131034117;
 			
-			// aapt resource value: 0x7f050008
-			public const int bButton = 2131034120;
+			// aapt resource value: 0x7f050007
+			public const int bButton = 2131034119;
 			
 			// aapt resource value: 0x7f050004
 			public const int hybrid = 2131034116;
 			
-			// aapt resource value: 0x7f050007
-			public const int mapWithOverlay = 2131034119;
+			// aapt resource value: 0x7f050008
+			public const int mapWithOverlay = 2131034120;
 			
 			// aapt resource value: 0x7f050000
 			public const int none = 2131034112;

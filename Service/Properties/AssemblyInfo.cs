@@ -37,8 +37,14 @@ using Android.App;
 [assembly: UsesPermission(Android.Manifest.Permission.AccessCoarseLocation)]
 [assembly: UsesPermission(Android.Manifest.Permission.ReceiveBootCompleted)]
 
+//#if RELEASE
+//[assembly: Application(Debuggable=false,Icon = "@drawable/gps_30")]
+//#else
+//[assembly: Application(Debuggable = true, Icon = "@drawable/gps_30")]
+//#endif
+
 #if RELEASE
-[assembly: Application(Debuggable=false,Icon = "@drawable/gps_30")]
+[assembly: Application(Debuggable=false)]
 #else
-[assembly: Application(Debuggable = true, Icon = "@drawable/gps_30")]
+[assembly: Application(Debuggable = true)]
 #endif

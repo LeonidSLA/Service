@@ -78,7 +78,6 @@
   <ItemGroup>
     <Compile Include="Activity1.cs" />
     <Compile Include="AzureDB.cs" />
-    <Compile Include="FTPClient.cs" />
     <Compile Include="GpsService.cs" />
     <Compile Include="LocationData.cs" />
     <Compile Include="Resources\Resource.Designer.cs" />
