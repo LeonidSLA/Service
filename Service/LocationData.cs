@@ -21,6 +21,9 @@ namespace Service
         [JsonProperty(PropertyName = "id")]
         public string id{ get; set; }
 
+        [JsonProperty(PropertyName = "number")]
+        public int number { get; set; }
+
         [JsonProperty(PropertyName = "time")]
         public string time { get; set; }
 
@@ -29,6 +32,9 @@ namespace Service
 
         [JsonProperty(PropertyName = "latitude")]
         public double latitude { get; set; }
+
+        [JsonProperty(PropertyName = "phoneId")]
+        public string phoneId { get; set; }
         
     }
 

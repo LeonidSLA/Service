@@ -19,7 +19,7 @@ using Android.OS;
 using Android.Util;
 using Android.Locations;
 using Android.Net.Http;
-
+using Android.Telephony;
 
 
 namespace Service
@@ -39,13 +39,22 @@ namespace Service
         private System.Timers.Timer _gpsUpdateTimer;
         System.Threading.Timer _locationRequestTimer;
         string _locationText;
-        //long _updateInterval = 30 * 1000;
-        long _updateInterval = 30 * 60 * 1000;
-        bool _ifGpsDataRecieved;
-        
+        //long _updateInterval = 40 * 1000;
+        long _updateInterval = 20 * 60 * 1000;
+        string _telephonyDeviceID;
+        int i=0;
+
         public override void OnCreate()
         {
             base.OnCreate();
+
+            TelephonyManager telephonyManager = (TelephonyManager)this.ApplicationContext.GetSystemService(Context.TelephonyService);
+
+            if (telephonyManager != null)
+            {
+                if (!string.IsNullOrEmpty(telephonyManager.DeviceId))
+                    _telephonyDeviceID = telephonyManager.DeviceId;
+            }
 
             InitializeLocationManager();
 
@@ -74,7 +83,7 @@ namespace Service
         public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
         {
 
-            locationRequest();
+            //locationRequest();
             Log.Debug("GPSService", "Location initialized");
                        
                                              
@@ -82,7 +91,7 @@ namespace Service
         }
         public override void OnLowMemory()
         {
-            _locationManager.RemoveUpdates(this);
+            //_locationManager.RemoveUpdates(this);
 
             base.OnLowMemory();
 
@@ -113,7 +122,7 @@ namespace Service
                 Log.Debug("SimpleService", _locationText);
 
                 WriteLocationTextFile(_locationText, location);
- 
+                
             }
         }
         
@@ -149,7 +158,7 @@ namespace Service
             _criteriaForLocationService = new Criteria();
             _criteriaForLocationService.Accuracy = Accuracy.NoRequirement;
 
-            locationRequest();            
+            //locationRequest();            
         }
 
 
@@ -169,6 +178,7 @@ namespace Service
 
                     Log.Debug("SimpleService", "LocationTimerTick");
                     //ToastShow.ToastShowMethod(this, _locationProvider);
+                    i++;
                 }
                 catch (System.Exception e)
                 {
@@ -185,26 +195,26 @@ namespace Service
             try
             {
 
-                string path = Android.OS.Environment.ExternalStorageDirectory.Path;
+                //string path = Android.OS.Environment.ExternalStorageDirectory.Path;
 
-                var directoryName = Path.Combine(path, "GPSService");
-                if (Directory.Exists(directoryName))
-                {
-                    Directory.CreateDirectory(directoryName);
-                }
-                var filename = Path.Combine(directoryName, "locations.txt");
+                //var directoryName = Path.Combine(path, "GPSService");
+                //if (Directory.Exists(directoryName))
+                //{
+                //    Directory.CreateDirectory(directoryName);
+                //}
+                //var filename = Path.Combine(directoryName, "locations.txt");
 
 
-                using (StreamWriter writeFile = new StreamWriter(filename, true))
-                {
-                    writeFile.WriteLine(" " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " " + locationText + " " + location.Provider+ " \r\n");
-                    writeFile.Close();
-                }
+                //using (StreamWriter writeFile = new StreamWriter(filename, true))
+                //{
+                //    writeFile.WriteLine(" " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " " + locationText + " " + location.Provider+ " \r\n");
+                //    writeFile.Close();
+                //}
 
                 //FTPClient.FTPClient.SendFile(this, filename);
                 ToastShow.ToastShowMethod(this, _locationProvider);
                 if (azureDB != null)
-                { azureDB.Addlocation(location); }
+                { azureDB.Addlocation(location, _telephonyDeviceID,i); }
 
             }
             catch (System.Exception e)
@@ -222,16 +232,16 @@ namespace Service
             {
                 Log.Debug("SimpleService", "locationRequest()");
 
-
+                _criteriaForLocationService.Accuracy = Accuracy.Fine;
                 _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
-                
 
-                _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this);
+
+                _handler.Post(delegate() { _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this); });
 
                 //selecting Network provider if gps is not responding for a long time 
                 if (_locationProvider == "gps")
                 {
-                    _ifGpsDataRecieved = false;
+                    
                     if (_GpsQualityTimer != null)
                     {
                         _GpsQualityTimer.Dispose();
@@ -239,16 +249,6 @@ namespace Service
 
                     qualityTimerStart();
 
-                    if (_ifGpsDataRecieved == false)
-                    {
-                        //setting Network provider 
-                        _criteriaForLocationService.Accuracy = Accuracy.Coarse;
-                        _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
-                        _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this);
-                    }
-
-
-                    Log.Debug("SimpleService", "ifGpsDataRecieved " + _ifGpsDataRecieved.ToString());
                 }
 
                 Log.Debug("SimpleService", "Provider "+_locationProvider.ToString());
@@ -286,7 +286,6 @@ namespace Service
         {
             Log.Debug("SimpleService", "qualityTimerStop()");
             _gpsUpdateTimer.Dispose();
-
         }
 
 
@@ -295,13 +294,15 @@ namespace Service
         {
             qualityTimerStop();
             Log.Debug("SimpleService", "OnTimedEvent()");
-            //_ifGpsDataRecieved = true;
+            
+            _criteriaForLocationService.Accuracy = Accuracy.Coarse;
+            _criteriaForLocationService.PowerRequirement = Power.Low;
+            _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
 
             _handler.Post(delegate()
             {
-                _criteriaForLocationService.Accuracy = Accuracy.Coarse;
-                _criteriaForLocationService.PowerRequirement = Power.Low;
-                _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
+                _locationManager.RemoveUpdates(this);
+                
                 _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this);
             });
         }

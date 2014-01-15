@@ -52,11 +52,11 @@ namespace Service
 
         }
 
-        public async void Addlocation(Location location)
+        public async void Addlocation(Location location, string deviceId,int i)
         {
 
-            
-            LocationsData locationData = new LocationsData { time = DateTime.Now.ToString(), latitude = location.Latitude, longitude = location.Longitude };
+
+            LocationsData locationData = new LocationsData { time = DateTime.Now.ToString(), number=i, latitude = location.Latitude, longitude = location.Longitude, phoneId = deviceId };
             try
             {
 
@@ -87,8 +87,7 @@ namespace Service
             {
                 //Get last 3 locations
                 
-                //_locationFromServer = await _LocationTable.Take(_numberOfRequiredPoints).ToListAsync();
-                _locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Take(_numberOfRequiredPoints).ToListAsync();
+                _locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Where(locations =>locations.phoneId=="860806021836019").Take(_numberOfRequiredPoints).ToListAsync();
                                
 
                 Log.Debug("AzureDB", _numberOfRequiredPoints.ToString());

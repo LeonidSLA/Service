@@ -146,7 +146,7 @@ namespace Service
             if (_mapFragment == null)
             {
                 GoogleMapOptions mapOptions = new GoogleMapOptions()
-                    .InvokeMapType(GoogleMap.MapTypeSatellite)
+                    .InvokeMapType(GoogleMap.MapTypeHybrid)
                     .InvokeZoomControlsEnabled(false)
                     .InvokeCompassEnabled(true);
 
