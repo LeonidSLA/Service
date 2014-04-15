@@ -27,7 +27,6 @@ namespace Service
     [Service(Label = "GpsService")]
     public class GpsService : Android.App.Service, Android.Locations.ILocationListener 
     {
-        System.Threading.Timer _GpsQualityTimer;
         Handler _handler;
 
         AzureDB azureDB;
@@ -39,8 +38,8 @@ namespace Service
         private System.Timers.Timer _gpsUpdateTimer;
         System.Threading.Timer _locationRequestTimer;
         string _locationText;
-        //long _updateInterval = 40 * 1000;
-        long _updateInterval = 20 * 60 * 1000;
+        long _updateInterval = 30 * 1000;
+        //long _updateInterval = 20 * 60 * 1000;
         string _telephonyDeviceID;
         int i=0;
 
@@ -58,11 +57,11 @@ namespace Service
 
             InitializeLocationManager();
 
-            ToastShow.ToastShowMethod(this, "InitializeLocationManager()");
+            CustomNotification.ShowToastMessage(this, "InitializeLocationManager()");
             
             azureDB = new AzureDB(this);
 
-            ToastShow.ToastShowMethod(this, "new AzureDB();");
+            CustomNotification.ShowToastMessage(this, "new AzureDB();");
 
             _handler = new Handler();
 
@@ -111,8 +110,9 @@ namespace Service
                 
 
                 //end of gps quality timer started on locationRequest 
-                if (_GpsQualityTimer != null)
+                if (_gpsUpdateTimer != null)
                 {
+
                     qualityTimerStop();
                 }
                 
@@ -155,10 +155,7 @@ namespace Service
 
             _locationManager = (LocationManager)GetSystemService(LocationService);
 
-            _criteriaForLocationService = new Criteria();
-            _criteriaForLocationService.Accuracy = Accuracy.NoRequirement;
-
-            //locationRequest();            
+            _criteriaForLocationService = new Criteria();        
         }
 
 
@@ -186,6 +183,8 @@ namespace Service
                 }
 
             }, null, 0, _updateInterval);
+
+            GC.KeepAlive(_locationRequestTimer);
         }
 
               
@@ -195,24 +194,24 @@ namespace Service
             try
             {
 
-                //string path = Android.OS.Environment.ExternalStorageDirectory.Path;
+                string path = Android.OS.Environment.ExternalStorageDirectory.Path;
 
-                //var directoryName = Path.Combine(path, "GPSService");
-                //if (Directory.Exists(directoryName))
-                //{
-                //    Directory.CreateDirectory(directoryName);
-                //}
-                //var filename = Path.Combine(directoryName, "locations.txt");
+                var directoryName = Path.Combine(path, "GPSService");
+                if (Directory.Exists(directoryName))
+                {
+                    Directory.CreateDirectory(directoryName);
+                }
+                var filename = Path.Combine(directoryName, "locations.txt");
 
 
-                //using (StreamWriter writeFile = new StreamWriter(filename, true))
-                //{
-                //    writeFile.WriteLine(" " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " " + locationText + " " + location.Provider+ " \r\n");
-                //    writeFile.Close();
-                //}
+                using (StreamWriter writeFile = new StreamWriter(filename, true))
+                {
+                    writeFile.WriteLine(" " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " " + locationText + " " + location.Provider + " \r\n");
+                    writeFile.Close();
+                }
 
                 //FTPClient.FTPClient.SendFile(this, filename);
-                ToastShow.ToastShowMethod(this, _locationProvider);
+                _handler.Post(delegate() { CustomNotification.ShowToastMessage(this, _locationProvider);});
                 if (azureDB != null)
                 { azureDB.Addlocation(location, _telephonyDeviceID,i); }
 
@@ -230,23 +229,22 @@ namespace Service
         {
             try
             {
+                                
                 Log.Debug("SimpleService", "locationRequest()");
 
-                _criteriaForLocationService.Accuracy = Accuracy.Fine;
+                _criteriaForLocationService.Accuracy = Accuracy.High;
+                _criteriaForLocationService.PowerRequirement = Power.High;
                 _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
 
 
-                _handler.Post(delegate() { _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this); });
+                _handler.Post(delegate() {
+                    _locationManager.RemoveUpdates(this);
+                    _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this); });
 
                 //selecting Network provider if gps is not responding for a long time 
                 if (_locationProvider == "gps")
                 {
                     
-                    if (_GpsQualityTimer != null)
-                    {
-                        _GpsQualityTimer.Dispose();
-                    }
-
                     qualityTimerStart();
 
                 }
@@ -256,7 +254,7 @@ namespace Service
             }
             catch(System.Exception e)
             {
-                //ToastShow.ToastShowMethod(this, "Exception" + e.Message);
+                _handler.Post(delegate() { CustomNotification.ShowToastMessage(this, "Exception" + e.Message); });
                 Log.Debug("Exception", e.Message);
             }
         }
@@ -265,7 +263,7 @@ namespace Service
 
         private void qualityTimerStart()
         {
-            int interval = 40000;
+            int interval = 30000;
             Log.Debug("SimpleService", "qualityTimerStart()");
 
             // Create a timer with a ten second interval.
@@ -274,7 +272,7 @@ namespace Service
             // Hook up the Elapsed event for the timer.
             _gpsUpdateTimer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
 
-            // Set the Interval to 20 seconds (20000 milliseconds).
+            // Set the Interval to 30 seconds (30000 milliseconds).
             _gpsUpdateTimer.Interval = interval;
             _gpsUpdateTimer.Enabled = true;
      
@@ -295,15 +293,17 @@ namespace Service
             qualityTimerStop();
             Log.Debug("SimpleService", "OnTimedEvent()");
             
-            _criteriaForLocationService.Accuracy = Accuracy.Coarse;
-            _criteriaForLocationService.PowerRequirement = Power.Low;
+            _criteriaForLocationService.Accuracy = Accuracy.Low;
+            _criteriaForLocationService.PowerRequirement = Power.Low; 
             _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
+            Log.Debug("SimpleService", "_location Provider "+_locationProvider.ToString());
 
             _handler.Post(delegate()
             {
                 _locationManager.RemoveUpdates(this);
                 
                 _locationManager.RequestLocationUpdates(_locationProvider, _updateInterval, 0, this);
+                CustomNotification.ShowToastMessage(this, _locationProvider.ToString()); 
             });
         }
 

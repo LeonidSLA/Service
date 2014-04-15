@@ -38,14 +38,16 @@ namespace Service
         
     }
 
-    public static class ToastShow
+    public static class CustomNotification
     {
-        public static void ToastShowMethod(Context context, string text)
+        
+        public static void ShowToastMessage(Context context, string text)
         {
-            bool isToastShow=false;
+            #if DEBUG
+            Toast.MakeText(context, text, ToastLength.Long).Show(); 
+            #endif
 
-            if (isToastShow)
-            { Toast.MakeText(context, text, ToastLength.Long); }
+            
         }
     }
 }

@@ -33,7 +33,7 @@ namespace Service
 
                context.StartService(i);
 
-               ToastShow.ToastShowMethod(context, "GPS Service started");
+               CustomNotification.ShowToastMessage(context, "GPS Service started");
 
             }
         }
@@ -93,9 +93,7 @@ namespace Service
             _StartServiceButton.Click += (sender, e) =>
             {
                 StartService(new Intent(this, typeof(GpsService)));
-
-                ToastShow.ToastShowMethod(this,"Service started");
-
+                    CustomNotification.ShowToastMessage(this, "Service started");
                 //this.Finish();
             };
 

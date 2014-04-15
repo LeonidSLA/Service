@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto" package="ru.GpsService" android:versionCode="1" android:versionName="0.5 alfa">
+  <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="16" />
+  <application android:label="GpsService" android:debuggable="true" android:name="mono.android.app.Application">
+    <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyAGSgD_R0TwaDz5RbEjYjYJHsCTBCkcDvg" />
+    <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
+    <receiver android:label="GpsService" android:name="service.BootCompletedBroadcastMessageReceiver">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+      </intent-filter>
+    </receiver>
+    <activity android:label="GpsService" android:name="service.MapsActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+    <service android:label="GpsService" android:name="service.GpsService" />
+    <activity android:label="Web Authenticator" android:name="xamarin.auth.FormAuthenticatorActivity" />
+    <activity android:label="Web Authenticator" android:name="xamarin.auth.WebAuthenticatorActivity" />
+    <activity android:name="xamarin.media.MediaPickerActivity" />
+    <provider android:name="mono.MonoRuntimeProvider" android:exported="false" android:initOrder="2147483647" android:authorities="ru.GpsService.mono.MonoRuntimeProvider.__mono_init__" />
+    <receiver android:name="mono.android.Seppuku">
+      <intent-filter>
+        <action android:name="mono.android.intent.action.SEPPUKU" />
+        <category android:name="mono.android.intent.category.SEPPUKU.ru.GpsService" />
+      </intent-filter>
+    </receiver>
+  </application>
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <!--<permission android:name="com.GPSService.permission.MAPS_RECEIVE" android:protectionLevel="signature" />-->
+  <uses-permission android:name="android.permission.READ_GSERVICES" />
+  <uses-permission android:name="android.permission.MAPS_RECEIVE" />
+  <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+</manifest>

@@ -38,15 +38,15 @@ namespace Service
                 _client = new MobileServiceClient(ApplicationURL, ApplicationKey);
                 Log.Debug("AzureDB", "new MobileServiceClient");
 
-                ToastShow.ToastShowMethod(_context, "MobileServiceClient");
+                CustomNotification.ShowToastMessage(_context, "MobileServiceClient");
 
                 _LocationTable = _client.GetTable<LocationsData>();
                 Log.Debug("AzureDB", "_client.GetTable");
-                ToastShow.ToastShowMethod(_context, "GetTable");
+                CustomNotification.ShowToastMessage(_context, "GetTable");
             }
             catch (Exception e)
             {
-                ToastShow.ToastShowMethod(_context, e.ToString());
+                CustomNotification.ShowToastMessage(_context, e.ToString());
                 Log.Debug("AzureDB", e.ToString());
             }
 
@@ -60,7 +60,7 @@ namespace Service
             try
             {
 
-                ToastShow.ToastShowMethod(_context, "Addlocation ");
+                CustomNotification.ShowToastMessage(_context, "Addlocation ");
                 
                 if (_LocationTable != null)
                 {
@@ -75,7 +75,7 @@ namespace Service
             catch (Exception e)
             {
                 Log.Debug("Addlocation", e.ToString());
-                ToastShow.ToastShowMethod(_context, e.ToString());
+                CustomNotification.ShowToastMessage(_context, e.ToString());
             }
 
         }
@@ -87,8 +87,10 @@ namespace Service
             {
                 //Get last 3 locations
                 
-                _locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Where(locations =>locations.phoneId=="860806021836019").Take(_numberOfRequiredPoints).ToListAsync();
+                //_locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Where(locations =>locations.phoneId=="860806021836019").Take(_numberOfRequiredPoints).ToListAsync();
+                _locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Take(_numberOfRequiredPoints).ToListAsync();
                                
+              
 
                 Log.Debug("AzureDB", _numberOfRequiredPoints.ToString());
 
@@ -96,7 +98,7 @@ namespace Service
             catch (Exception e)
             {
                 Log.Debug("GetLocationDataFromServerAsync", e.Message);
-                ToastShow.ToastShowMethod(_context, e.ToString());
+                CustomNotification.ShowToastMessage(_context, e.ToString());
             }
         }
         
