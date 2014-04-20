@@ -38,8 +38,13 @@ namespace Service
         private System.Timers.Timer _gpsUpdateTimer;
         System.Threading.Timer _locationRequestTimer;
         string _locationText;
-        long _updateInterval = 30 * 1000;
-        //long _updateInterval = 20 * 60 * 1000;
+#if DEBUG
+        long _updateInterval = 60 * 1000;   
+#else
+        long _updateInterval = 30 * 60 * 1000;
+#endif
+
+        
         string _telephonyDeviceID;
         int i=0;
 
@@ -119,6 +124,8 @@ namespace Service
                 _currentLocation = location;
                 _locationText = string.Format("{0}, {1}", location.Latitude, location.Longitude);
 
+                _handler.Post(delegate() { CustomNotification.ShowToastMessage(this, "locationChanged"); });
+                    
                 Log.Debug("SimpleService", _locationText);
 
                 WriteLocationTextFile(_locationText, location);
@@ -174,7 +181,9 @@ namespace Service
                     locationRequest();
 
                     Log.Debug("SimpleService", "LocationTimerTick");
-                    //ToastShow.ToastShowMethod(this, _locationProvider);
+
+                    _handler.Post(delegate() { CustomNotification.ShowToastMessage(this, _locationProvider); });
+                    
                     i++;
                 }
                 catch (System.Exception e)
@@ -194,21 +203,21 @@ namespace Service
             try
             {
 
-                string path = Android.OS.Environment.ExternalStorageDirectory.Path;
+                //string path = Android.OS.Environment.ExternalStorageDirectory.Path;
 
-                var directoryName = Path.Combine(path, "GPSService");
-                if (Directory.Exists(directoryName))
-                {
-                    Directory.CreateDirectory(directoryName);
-                }
-                var filename = Path.Combine(directoryName, "locations.txt");
+                //var directoryName = Path.Combine(path, "GPSService");
+                //if (Directory.Exists(directoryName))
+                //{
+                //    Directory.CreateDirectory(directoryName);
+                //}
+                //var filename = Path.Combine(directoryName, "locations.txt");
 
 
-                using (StreamWriter writeFile = new StreamWriter(filename, true))
-                {
-                    writeFile.WriteLine(" " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " " + locationText + " " + location.Provider + " \r\n");
-                    writeFile.Close();
-                }
+                //using (StreamWriter writeFile = new StreamWriter(filename, true))
+                //{
+                //    writeFile.WriteLine(" " + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " " + locationText + " " + location.Provider + " \r\n");
+                //    writeFile.Close();
+                //}
 
                 //FTPClient.FTPClient.SendFile(this, filename);
                 _handler.Post(delegate() { CustomNotification.ShowToastMessage(this, _locationProvider);});
@@ -232,7 +241,7 @@ namespace Service
                                 
                 Log.Debug("SimpleService", "locationRequest()");
 
-                _criteriaForLocationService.Accuracy = Accuracy.High;
+                _criteriaForLocationService.Accuracy = Accuracy.Fine;
                 _criteriaForLocationService.PowerRequirement = Power.High;
                 _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
 
@@ -267,7 +276,7 @@ namespace Service
             Log.Debug("SimpleService", "qualityTimerStart()");
 
             // Create a timer with a ten second interval.
-            _gpsUpdateTimer = new System.Timers.Timer(interval+500);
+            _gpsUpdateTimer = new System.Timers.Timer(interval+10);
 
             // Hook up the Elapsed event for the timer.
             _gpsUpdateTimer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
@@ -283,6 +292,7 @@ namespace Service
         private void qualityTimerStop()
         {
             Log.Debug("SimpleService", "qualityTimerStop()");
+            _gpsUpdateTimer.Stop();
             _gpsUpdateTimer.Dispose();
         }
 
@@ -296,7 +306,7 @@ namespace Service
             _criteriaForLocationService.Accuracy = Accuracy.Low;
             _criteriaForLocationService.PowerRequirement = Power.Low; 
             _locationProvider = _locationManager.GetBestProvider(_criteriaForLocationService, true);
-            Log.Debug("SimpleService", "_location Provider "+_locationProvider.ToString());
+            Log.Debug("SimpleService", "OnTimedEvent Provider " + _locationProvider.ToString());
 
             _handler.Post(delegate()
             {

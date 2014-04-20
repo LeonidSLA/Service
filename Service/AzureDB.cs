@@ -86,9 +86,9 @@ namespace Service
             try
             {
                 //Get last 3 locations
-                
-                //_locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Where(locations =>locations.phoneId=="860806021836019").Take(_numberOfRequiredPoints).ToListAsync();
-                _locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Take(_numberOfRequiredPoints).ToListAsync();
+
+                _locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Where(locations => locations.phoneId == "860806021836019").Take(_numberOfRequiredPoints).ToListAsync();
+                //_locationFromServer = await _LocationTable.OrderByDescending<string>(locations => locations.time).Take(_numberOfRequiredPoints).ToListAsync();
                                
               
 
