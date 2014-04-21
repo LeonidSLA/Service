@@ -25,21 +25,23 @@ using Android.Telephony;
 namespace Service
 {
     [Service(Label = "GpsService")]
-    public class GpsService : Android.App.Service, Android.Locations.ILocationListener 
+    public class GpsService : Android.App.Service, Android.Locations.ILocationListener,Android.Gms.Location.ILocationListener, Android.Gms.Common.IGooglePlayServicesClientConnectionCallbacks, Android.Gms.Common.IGooglePlayServicesClientOnConnectionFailedListener
     {
         Handler _handler;
 
         AzureDB azureDB;
         Location _currentLocation;
         Criteria _criteriaForLocationService;
+        Android.Gms.Location.LocationClient locClient;
         LocationManager _locationManager;
         Availability _gpsStatus;
         string _locationProvider;
         private System.Timers.Timer _gpsUpdateTimer;
         System.Threading.Timer _locationRequestTimer;
         string _locationText;
+
 #if DEBUG
-        long _updateInterval = 60 * 1000;   
+        long _updateInterval = 30 * 1000;   
 #else
         long _updateInterval = 30 * 60 * 1000;
 #endif
@@ -60,23 +62,31 @@ namespace Service
                     _telephonyDeviceID = telephonyManager.DeviceId;
             }
 
-            InitializeLocationManager();
+            //_locationManager = (LocationManager)GetSystemService(LocationService);
+            //_criteriaForLocationService = new Criteria();     
+            //CustomNotification.ShowToastMessage(this, "LocationManager()");
 
-            CustomNotification.ShowToastMessage(this, "InitializeLocationManager()");
-            
+            locClient = new Android.Gms.Location.LocationClient(this, this, this);
+            locClient.Connect();
+            CustomNotification.ShowToastMessage(this, "LocationClient()");
+
             azureDB = new AzureDB(this);
-
             CustomNotification.ShowToastMessage(this, "new AzureDB();");
 
             _handler = new Handler();
 
-            _handler.Post(delegate() { StartLocationRequestTimerStart(); });
+            //_handler.Post(delegate() { StartLocationRequestTimerStart(); });
 
         }
         public override void OnDestroy()
         {
             Log.Debug("SimpleService", "SimpleService stopped");
+            if (locClient.IsConnected)
+            {
+                locClient.Disconnect();
+            }
         }
+
 
         public override IBinder OnBind(Intent intent)
         {
@@ -88,7 +98,7 @@ namespace Service
         {
 
             //locationRequest();
-            Log.Debug("GPSService", "Location initialized");
+            Log.Debug("GPSService", "OnStartCommand");
                        
                                              
             return StartCommandResult.Sticky;
@@ -104,8 +114,32 @@ namespace Service
             Log.Debug("GPSService", "LowMemory");
         }
 
+
+        public void OnConnected(Bundle bundle)
+        {
+            Log.Debug("SimpleService", "LocationClient Conneted");
+            Android.Gms.Location.LocationRequest locRequest = new Android.Gms.Location.LocationRequest();
+
+            locRequest.SetPriority(100);
+            locRequest.SetFastestInterval(_updateInterval - 1000);
+            locRequest.SetInterval(_updateInterval);
+
+            locClient.RequestLocationUpdates(locRequest, this);
+
+        }
+        public void OnDisconnected()
+        {
+            Log.Debug("SimpleService", "LocationClient Disconnected");
+
+
+        }
+
+        public void OnConnectionFailed(Android.Gms.Common.ConnectionResult result)
+        {
+            Log.Debug("SimpleService", "LocationClient connetion Failed");
         
-               
+        }       
+
 
         public void OnLocationChanged(Location location) 
         {
@@ -115,11 +149,11 @@ namespace Service
                 
 
                 //end of gps quality timer started on locationRequest 
-                if (_gpsUpdateTimer != null)
-                {
+                //if (_gpsUpdateTimer != null)
+                //{
 
-                    qualityTimerStop();
-                }
+                //    qualityTimerStop();
+                //}
                 
                 _currentLocation = location;
                 _locationText = string.Format("{0}, {1}", location.Latitude, location.Longitude);
@@ -136,13 +170,13 @@ namespace Service
         public void OnProviderDisabled(string provider) 
         {
             Log.Debug("SimpleService", "OnProviderDisabled");
-            //locationRequest();
+            
         }
 
         public void OnProviderEnabled(string provider) 
         {
             Log.Debug("SimpleService", "OnProviderEnabled");
-            //locationRequest();  
+            
         }
 
         public void OnStatusChanged(string provider, Availability status, Bundle extras) 
@@ -154,15 +188,7 @@ namespace Service
             }
 
             Log.Debug("SimpleService", "OnStatusChanged");
-            //locationRequest();
-        }
-
-        void InitializeLocationManager()
-        {
-
-            _locationManager = (LocationManager)GetSystemService(LocationService);
-
-            _criteriaForLocationService = new Criteria();        
+            
         }
 
 
