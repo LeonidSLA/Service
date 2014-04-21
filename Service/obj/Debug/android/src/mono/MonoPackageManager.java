@@ -99,7 +99,6 @@ class MonoPackageManager_Resources {
 		"System.Runtime.dll",
 		"System.Runtime.Extensions.dll",
 		"System.Runtime.InteropServices.dll",
-		"System.Runtime.InteropServices.WindowsRuntime.dll",
 		"System.Runtime.Numerics.dll",
 		"System.Runtime.Serialization.Json.dll",
 		"System.Runtime.Serialization.Primitives.dll",
